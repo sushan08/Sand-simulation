@@ -18,7 +18,7 @@ class Game:
         self.last_gravity_update = 0
         self.font = Font('8_bit_wonder.ttf', 24)
         self.menu_items = [("Start", (WIDTH//2 - 100, HEIGHT//2)), ("EXIT", (WIDTH//2 - 100, HEIGHT//2 - 60))]
-        self.game_items = [("Sand", (100, 900)), ("Solid", (300, 900)), ("Erase", (500, 900))]
+        self.game_items = [("Sand", (100, OPTIONS_Y)), ("Solid", (300, OPTIONS_Y)), ("Erase", (500, OPTIONS_Y))]
         self.in_menu = True
         self.current_tool = CellKind.SAND
         self.selected_menu_item = None
@@ -74,7 +74,7 @@ class Game:
         ypos -= 24
         for item, position in self.menu_items:
             text_width = len(item) * 24
-            if position[0] <= xpos <= (position[0] + text_width) and position[1] <= ypos <= (position[1] + 2*24):
+            if position[0]-24 <= xpos <= (position[0] + text_width) and position[1] <= ypos <= (position[1] + 2*24):
                 if item == "Start":
                     self.in_menu = False
                 elif item == "EXIT":
@@ -85,7 +85,7 @@ class Game:
         ypos -= 24
         for item, position in self.game_items:
             text_width = len(item) * 24
-            if position[0] <= xpos <= (position[0] + text_width) and position[1] <= ypos <= (position[1] + 2*24):
+            if position[0] <= xpos <= (position[0] + text_width) and position[1]-24 <= ypos <= (position[1] + 24):
                 if item == "Sand":
                     self.current_tool = CellKind.SAND
                 elif item == "Solid":
