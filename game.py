@@ -55,11 +55,18 @@ class Game:
                 self.cells[y][x] = self.current_tool
 
     def apply_gravity(self):
-        for y in range(1, GRID_HEIGHT):
+        for y in range(1, GRID_HEIGHT):  # Start from the bottom to the top
             for x in range(GRID_WIDTH):
-                if self.cells[y][x] == CellKind.SAND and self.cells[y - 1][x] == CellKind.EMPTY:
-                    self.cells[y][x] = CellKind.EMPTY
-                    self.cells[y - 1][x] = CellKind.SAND
+                if self.cells[y][x] == CellKind.SAND:
+                    if self.cells[y - 1][x] == CellKind.EMPTY:
+                        self.cells[y][x] = CellKind.EMPTY
+                        self.cells[y - 1][x] = CellKind.SAND
+                    elif x > 0 and self.cells[y - 1][x + 1] == CellKind.EMPTY:
+                        self.cells[y][x] = CellKind.EMPTY
+                        self.cells[y - 1][x + 1] = CellKind.SAND
+                    elif x < GRID_WIDTH - 1 and self.cells[y - 1][x - 1] == CellKind.EMPTY:
+                        self.cells[y][x] = CellKind.EMPTY
+                        self.cells[y - 1][x - 1] = CellKind.SAND
 
     def render_menu(self):
         for item, position in self.menu_items:
