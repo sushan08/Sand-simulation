@@ -5,11 +5,13 @@ from enum import Enum
 import numpy as np
 from text import Font
 from constants import *
+import random
 
 class CellKind(Enum):
     EMPTY = 0
     SAND = 1
     SOLID = 2
+    TNT = 3
 
 class Game:
     def __init__(self):
@@ -18,9 +20,9 @@ class Game:
         self.last_gravity_update = 0
         self.font = Font('8_bit_wonder.ttf', 24)
         self.menu_items = [("Start", (WIDTH//2 - 100, HEIGHT//2)), ("EXIT", (WIDTH//2 - 100, HEIGHT//2 - 60))]
-        self.game_items = [("Sand", (100, OPTIONS_Y)), ("Solid", (300, OPTIONS_Y)), ("Erase", (500, OPTIONS_Y))]
+        self.game_items = [("Sand", (50, OPTIONS_Y)), ("Solid", (200, OPTIONS_Y)), ("Erase", (400, OPTIONS_Y)), ("TNT", (600, OPTIONS_Y))]
         self.in_menu = True
-        self.current_tool = CellKind.SAND
+        self.current_tool = None
         self.selected_menu_item = None
         self.selected_game_item = CellKind.SAND
 
@@ -43,7 +45,8 @@ class Game:
         return {
             CellKind.EMPTY: BG_COLOR,
             CellKind.SAND: SAND_COLOR,
-            CellKind.SOLID: SOLID_COLOR
+            CellKind.SOLID: SOLID_COLOR,
+            CellKind.TNT: TNT_COLOR 
         }.get(cell_kind, BG_COLOR)
 
     def update_cell(self, xpos, ypos, button):
@@ -52,12 +55,16 @@ class Game:
 
         if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
             if button == glfw.MOUSE_BUTTON_RIGHT:
+                if self.current_tool == CellKind.SAND and self.cells[y][x] == CellKind.SOLID:
+                    return
+                if self.current_tool == CellKind.TNT and y <= 1:
+                    return
                 self.cells[y][x] = self.current_tool
 
     def apply_gravity(self):
-        for y in range(1, GRID_HEIGHT):  # Start from the bottom to the top
+        for y in range(1, GRID_HEIGHT):
             for x in range(GRID_WIDTH):
-                if self.cells[y][x] == CellKind.SAND:
+                if self.cells[y][x] == CellKind.SAND :
                     if self.cells[y - 1][x] == CellKind.EMPTY:
                         self.cells[y][x] = CellKind.EMPTY
                         self.cells[y - 1][x] = CellKind.SAND
@@ -67,7 +74,39 @@ class Game:
                     elif x < GRID_WIDTH - 1 and self.cells[y - 1][x - 1] == CellKind.EMPTY:
                         self.cells[y][x] = CellKind.EMPTY
                         self.cells[y - 1][x - 1] = CellKind.SAND
+                elif self.cells[y][x] == CellKind.TNT:
+                    if self.cells[y - 1][x] == CellKind.EMPTY:   
+                        if y <= 1:
+                            self.cells[y][x] = CellKind.EMPTY
+                            return
+                        self.cells[y][x] = CellKind.EMPTY
+                        self.cells[y - 1][x] = CellKind.TNT
+                    elif self.cells[y-1][x] == CellKind.SAND or self.cells[y-1][x] == CellKind.SOLID:
+                        self.cells[y][x] = CellKind.EMPTY
+                        self.flood_fill(x,y-1)
+                    elif self.cells[y-1][x-1] == CellKind.SAND or self.cells[y][x-1] == CellKind.SOLID:
+                        self.cells[y][x] = CellKind.EMPTY
+                        self.flood_fill(x-1,y-1)
+                    elif self.cells[y-1][x+1] == CellKind.SAND or self.cells[y][x+1] == CellKind.SOLID:
+                        self.cells[y][x] = CellKind.EMPTY
+                        self.flood_fill(x+1,y-1)
+                    
 
+    def flood_fill(self, x, y):
+        target = self.cells[y][x]
+        iterations = random.choice(range(100))
+        stack = [(x, y)]
+        while stack and iterations:
+            cx, cy = stack.pop()
+            iterations-=1
+            if 0 <= cx < GRID_WIDTH and 0 <= cy < GRID_HEIGHT and self.cells[cy][cx] == target:
+                self.cells[cy][cx] = CellKind.EMPTY
+                stack.extend([(cx + 1, cy), (cx - 1, cy), 
+                              (cx, cy + 1), (cx, cy - 1),
+                              (cx + 1, cy + 1), (cx - 1, cy - 1),
+                              (cx + 1, cy - 1), (cx - 1, cy + 1)])
+                
+                    
     def render_menu(self):
         for item, position in self.menu_items:
             self.font.render_text(position[0], position[1], item, gap=2, color=MENU_COLOR)
@@ -81,7 +120,7 @@ class Game:
         ypos -= 24
         for item, position in self.menu_items:
             text_width = len(item) * 24
-            if position[0]-24 <= xpos <= (position[0] + text_width) and position[1] <= ypos <= (position[1] + 2*24):
+            if position[0]-24 <= xpos <= (position[0] + text_width) and position[1]-24 <= ypos <= (position[1] + 24):
                 if item == "Start":
                     self.in_menu = False
                 elif item == "EXIT":
@@ -99,6 +138,8 @@ class Game:
                     self.current_tool = CellKind.SOLID
                 elif item == "Erase":
                     self.current_tool = CellKind.EMPTY
+                elif item == "TNT":
+                    self.current_tool = CellKind.TNT
                 self.selected_game_item = item
 
 def mouse_button_callback(window, button, action, mods):
